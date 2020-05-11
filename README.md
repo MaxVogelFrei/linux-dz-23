@@ -1,4 +1,12 @@
 # Dynamic Web
+Демо стенд с nginx для php-fpm, nodejs/react и flask
+```bash
+vagrant up
+```
+После запуска при обращении к соответствующим порта локалхоста отдает  
+http://localhost:8081 - WordPress(php-fpm)  
+http://localhost:8082 - демо приложение helloworld (NodeJS/react)  
+http://localhost:8083 - демо приложение helloworld (python/flask)  
 ## Задание
 Роль для настройки веб сервера  
 Варианты стенда  
@@ -14,14 +22,6 @@ nginx + java (tomcat/jetty/netty) + go + ruby
 vagrant стэнд с проброшенными на локалхост портами  
 каждый порт на свой сайт  
 через нжинкс  
-## Решение
-```bash
-vagrant up
-```
-После запуска при обращении к соответствующим порта локалхоста отдает  
-http://localhost:8081 - WordPress(php-fpm)  
-http://localhost:8082 - демо приложение helloworld (NodeJS/react)  
-http://localhost:8083 - демо приложение helloworld (python/flask)  
 ## Выполнение
 настройка стенда выполняется автоматически плэйбуком [web.yml](web.yml)  
 перед запуском сервисов устаналиваются необходимые пакеты  
@@ -33,9 +33,8 @@ http://localhost:8083 - демо приложение helloworld (python/flask)
 
 Корень nginx /home/www/html/  
 Все сервисы будут работать оттуда  
-
 ### WordPress
-в конфиге php-fpm меняем юзера и порт меняем на сокет
+в конфиге php-fpm меняем юзера и порт меняем на сокет  
 ```yaml
     - name: php-fpm conf
       lineinfile:
