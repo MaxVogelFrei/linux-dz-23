@@ -5,7 +5,7 @@
 
   tasks:
 
-    - name: SELinux disable
+    - name: selinux disable
       selinux:
         state: disabled
 
@@ -27,7 +27,7 @@
         dest: /etc/yum.repos.d/nginx.repo
         mode: 0644
 
-    - name: 
+    - name: enable repos
       shell: |
         yum-config-manager --enable remi-php74
         yum-config-manager --enable nginx-mainline
@@ -49,20 +49,20 @@
         - nginx
         state: present
 
-    - name: Upgrade pip
+    - name: upgrade pip
       pip:
         name: pip
         state: latest
         executable: pip2.7
 
-    - name: Install virtualenv
+    - name: install virtualenv
       pip:
         name: 
           - virtualenv
         state: present
         executable: pip2.7
 
-    - name: Configure php-fpm
+    - name: php-fpm conf
       lineinfile:
         path: /etc/php-fpm.d/www.conf
         line: "{{ item.line }}"
@@ -117,7 +117,7 @@
         state: directory
         mode: 0755
 
-    - name: install and create npm hello-world
+    - name: create hello-world app
       shell: |
         cd /opt
         npm install -g create-react-app
@@ -125,7 +125,7 @@
         cd /opt/hello-world
         npm run build
 
-    - name: copy files to react-directory
+    - name: copy react app to html
       copy:
         src: /opt/hello-world/build/
         dest: /home/www/html/nodejs
@@ -148,7 +148,7 @@
         - { src: flask/wsgi.py, dst: "/home/www/html/flask/helloworld/wsgi.py" }
         - { src: flask/helloworld.service, dst: "/etc/systemd/system/helloworld.service" }
 
-    - name: Initiate virtualenv
+    - name: virtualenv
       pip: 
         virtualenv: /home/www/html/flask/helloworld/helloworldenv
         virtualenv_python: python2.7
