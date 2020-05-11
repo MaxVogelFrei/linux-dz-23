@@ -1,0 +1,61 @@
+---
+- name: dynamic web stand
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: create flask dir
+      file:
+        path: /home/www/html/flask/helloworld
+        state: directory
+        mode: 0755
+
+    - name: conf and app files copy
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dst }}"
+        owner: root
+        group: root
+        mode: '0644'
+      with_items:
+        - { src: nginx/flask.conf, dst: "/etc/nginx/conf.d/flask.conf" }
+        - { src: nginx/wp.conf, dst: "/etc/nginx/conf.d/wp.conf" }
+        - { src: nginx/nodejs.conf, dst: "/etc/nginx/conf.d/nodejs.conf" }
+        - { src: flask/helloworld.py, dst: "/home/www/html/flask/helloworld/helloworld.py" }
+        - { src: flask/helloworld.ini, dst: "/home/www/html/flask/helloworld/helloworld.ini" }
+        - { src: flask/requirements.txt, dst: "/home/www/html/flask/helloworld/requirements.txt" }
+        - { src: flask/helloworld.service, dst: "/etc/systemd/system/helloworld.service" }
+
+    - name: Initiate virtualenv
+      pip:
+        virtualenv: /home/www/html/flask/helloworld/helloworldenv
+        virtualenv_python: python2.7
+        requirements: /home/www/html/flask/helloworld/requirements.txt
+
+    - name: nginx owner of html dir
+      file:
+        path: /home/www/html/
+        state: directory
+        recurse: yes
+        owner: nginx
+        group: nginx
+
+    - name: start flask app
+      systemd:
+        name: helloworld
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    - name: start php-fpm
+      systemd:
+        name: php-fpm
+        state: started
+        enabled: yes
+
+    - name: start nginx
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+

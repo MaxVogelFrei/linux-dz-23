@@ -1,0 +1,182 @@
+---
+- name: dynamic web stand
+  hosts: all
+  become: yes
+
+  tasks:
+
+    - name: SELinux disable
+      selinux:
+        state: disabled
+
+    - name: epel repo
+      yum:
+        name: epel-release
+        state: present
+
+    - name: remi repo
+      yum:
+        name: 
+        - https://rpms.remirepo.net/enterprise/remi-release-7.rpm
+        - yum-utils
+        state: present
+
+    - name: nginx repo
+      copy:
+        src: yum/nginx.repo
+        dest: /etc/yum.repos.d/nginx.repo
+        mode: 0644
+
+    - name: 
+      shell: |
+        yum-config-manager --enable remi-php74
+        yum-config-manager --enable nginx-mainline
+
+    - name: packages
+      yum:
+        name:
+        - php-fpm
+        - php-cli
+        - php-mysqlnd 
+        - php-opcache
+        - php-mbstring
+        - php-xml
+        - php-gd
+        - php-curl
+        - gcc
+        - python-pip
+        - python-virtualenv
+        - nginx
+        state: present
+
+    - name: Upgrade pip
+      pip:
+        name: pip
+        state: latest
+        executable: pip2.7
+
+    - name: Install virtualenv
+      pip:
+        name: 
+          - virtualenv
+        state: present
+        executable: pip2.7
+
+    - name: Configure php-fpm
+      lineinfile:
+        path: /etc/php-fpm.d/www.conf
+        line: "{{ item.line }}"
+        regexp: "{{ item.regexp }}"
+        state: present
+      with_items:
+        - { regexp: "^user =", line: "user = nginx" }
+        - { regexp: "^group =", line: "group = nginx" }
+        - { regexp: "^listen =", line: "listen = /run/php-fpm/www.sock" }
+        - { regexp: "^;listen.owner", line: "listen.owner = nginx" }
+        - { regexp: "^;listen.group", line: "listen.group = nginx" }
+
+    - name: nginx access /var/lib/php
+      file:
+        path: /var/lib/php
+        state: directory
+        recurse: yes
+        owner: root
+        group: nginx
+
+    - name: create html dir
+      file:
+        path: /home/www/html/
+        state: directory
+        mode: 0755
+
+    - name: Download WP
+      get_url:
+        url: https://wordpress.org/latest.tar.gz
+        dest: /opt/latest.tar.gz
+
+    - name: Download NodeJS
+      get_url:
+        url: https://nodejs.org/download/release/latest/node-v14.2.0-linux-x64.tar.gz
+        dest: /opt/node-v14.2.0-linux-x64.tar.gz
+
+    - name: unpack WP and NodeJS
+      shell: |
+        cd /opt
+        tar --strip-components 1 -xzvf node-v* -C /usr/
+        tar -xvf latest.tar.gz -C /home/www/html/
+
+    - name: create flask dir
+      file:
+        path: /home/www/html/flask/helloworld
+        state: directory
+        mode: 0755
+
+    - name: create nodejs dir
+      file:
+        path: /home/www/html/nodejs
+        state: directory
+        mode: 0755
+
+    - name: install and create npm hello-world
+      shell: |
+        cd /opt
+        npm install -g create-react-app
+        create-react-app hello-world
+        cd /opt/hello-world
+        npm run build
+
+    - name: copy files to react-directory
+      copy:
+        src: /opt/hello-world/build/
+        dest: /home/www/html/nodejs
+        remote_src: yes
+
+    - name: conf and app files copy
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dst }}"
+        owner: root
+        group: root
+        mode: '0644'
+      with_items:
+        - { src: nginx/flask.conf, dst: "/etc/nginx/conf.d/flask.conf" }
+        - { src: nginx/wp.conf, dst: "/etc/nginx/conf.d/wp.conf" }
+        - { src: nginx/nodejs.conf, dst: "/etc/nginx/conf.d/nodejs.conf" }
+        - { src: flask/helloworld.py, dst: "/home/www/html/flask/helloworld/helloworld.py" }
+        - { src: flask/helloworld.ini, dst: "/home/www/html/flask/helloworld/helloworld.ini" }
+        - { src: flask/requirements.txt, dst: "/home/www/html/flask/helloworld/requirements.txt" }
+        - { src: flask/wsgi.py, dst: "/home/www/html/flask/helloworld/wsgi.py" }
+        - { src: flask/helloworld.service, dst: "/etc/systemd/system/helloworld.service" }
+
+    - name: Initiate virtualenv
+      pip: 
+        virtualenv: /home/www/html/flask/helloworld/helloworldenv
+        virtualenv_python: python2.7
+        requirements: /home/www/html/flask/helloworld/requirements.txt
+
+    - name: nginx owner of html dir
+      file:
+        path: /home/www/html/
+        state: directory
+        recurse: yes
+        owner: nginx
+        group: nginx
+
+    - name: start flask app
+      systemd:
+        name: helloworld
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    - name: start php-fpm
+      systemd:
+        name: php-fpm
+        state: started
+        enabled: yes
+
+    - name: start nginx
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes

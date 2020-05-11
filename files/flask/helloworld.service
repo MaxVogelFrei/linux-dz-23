@@ -1,0 +1,14 @@
+[Unit]
+Description=uWSGI instance to serve myproject
+After=network.target
+
+[Service]
+User=nginx
+Group=nginx
+
+WorkingDirectory=/home/www/html/flask/helloworld
+Environment="PATH=/home/www/html/flask/helloworld/helloworldenv/bin"
+ExecStart=/home/www/html/flask/helloworld/helloworldenv/bin/uwsgi --ini helloworld.ini
+
+[Install]
+WantedBy=multi-user.target
