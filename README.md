@@ -92,7 +92,6 @@ server {
     root /home/www/html/wordpress;
     index index.php;
 
-    # log files
     access_log /var/log/nginx/wp.local.access.log;
     error_log /var/log/nginx/wp.local.error.log;
 
